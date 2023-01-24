@@ -1,0 +1,20 @@
+{
+	"device_list": [
+		{
+			"device_type": "this must match the same as the ones provided by netmiko!",
+			"hostname": "host-name-here",
+			"ip": "1.1.1.1",
+			"username": "your-username-here",
+			"password": "your-password-here",
+			"secret": ""
+		},
+		{
+			"device_type": "brocade_fastiron",
+			"hostname": "lab-acc-sw01",
+			"ip": "192.168.1.1",
+			"username": "admin",
+			"password": "MyPassword1",
+			"secret": "Di43dlkn:^"
+		}
+	]
+}
