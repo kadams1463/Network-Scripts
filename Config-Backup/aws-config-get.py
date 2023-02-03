@@ -48,7 +48,7 @@ tftp_addr = tftp_ip['ip'] # use the same value provided for our TFTP IP address 
 client = boto3.client('secretsmanager', region_name='us-east-1')
 
 # Get the password for the user account
-response1 = client.get_secret_value(SecretId='prod/project-name/password-or-secrett')
+response1 = client.get_secret_value(SecretId='prod/project-name/password-or-secret')
 
 # Set the variable for that password
 user_password = json.loads(response1['SecretString'])
@@ -85,19 +85,26 @@ with open(device_list) as device_file: # similar to the TFTP one
         # Set the device_type for netmiko based on the value in the device.json file
         net_type = device['device_type']
         
-        # If the value match
+        # If the values match
+        if net_type == "cisco_ios":
+            net_connect.enable() # switch to enable mode for Cisco
         if net_type == "brocade_fastiron":
             net_connect.enable() # switch to enable mode for brocade
-        elif net_type == "vyos":
+        if net_type == "vyos":
             net_connect.send_command("configure", expect_string=r"#") # we're expecting the prompt to end in a "#" when going into configure mode
         
         # We need to save the file in the below format. To update, you need to make sure you're only adding string variables/data into each () set
-        if net_type == "brocade_fastiron":
-            net_connect.send_command(("copy running-config tftp")+(tftp_addr)+(" ")+(device['hostname'])+("_")+(today_date)+("_config"))
-        elif net_type == "vyos":
-            net_connect.send_command(("save tftp://")+(tftp_addr)+("/config_")+(device['hostname'])+("_")+(today_date)+(".boot"))
-
-        print("Config saved.")
+        if net_type == "cisco_ios": # if it's a Cisco device
+            net_connect.send_command(("copy running-config tftp://")+(tftp_addr)+("/")+(device['hostname'])+("_")+(today_date)+("_config"), expect_string="Address or name") # send the save command with some expected output from the device
+            net_connect.send_command("\n", expect_string="Destination filename") # press Enter while expecting more output from the device
+            net_connect.send_command("\n") # press Enter one more time to start the process
+            print("Config saved.") # print a successful message
+        if net_type == "brocade_fastiron": # if it's a Brocade device
+            net_connect.send_command(("copy running-config tftp")+(tftp_addr)+(" ")+(device['hostname'])+("_")+(today_date)+("_config")) # send the save command for Brocade devices
+            print("Config saved.") # print a successful message
+        if net_type == "vyos": # if it's a VyOS device
+            net_connect.send_command(("save tftp://")+(tftp_addr)+("/config_")+(device['hostname'])+("_")+(today_date)+(".boot")) # send the saver command for VyOS devices
+            print("Config saved.") # print a successful message
 
         # Leave the current session and continue in the LOOP
         net_connect.disconnect()
